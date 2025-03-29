@@ -1,0 +1,271 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Investment Parameters</h5>
+            </div>
+            <div class="card-body">
+                <form id="simulation-form">
+                    <div class="mb-3">
+                        <label for="initialInvestment" class="form-label">Initial Investment</label>
+                        <input type="number" class="form-control" id="initialInvestment" min="0" step="1000" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">Investment Duration (years)</label>
+                        <input type="number" class="form-control" id="duration" min="1" max="20" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label for="minRevenue" class="form-label">Min. Annual Revenue</label>
+                            <input type="number" class="form-control" id="minRevenue" min="0" required>
+                        </div>
+                        <div class="col">
+                            <label for="maxRevenue" class="form-label">Max. Annual Revenue</label>
+                            <input type="number" class="form-control" id="maxRevenue" min="0" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label for="minCost" class="form-label">Min. Annual Cost</label>
+                            <input type="number" class="form-control" id="minCost" min="0" required>
+                        </div>
+                        <div class="col">
+                            <label for="maxCost" class="form-label">Max. Annual Cost</label>
+                            <input type="number" class="form-control" id="maxCost" min="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="discountRate" class="form-label">Discount Rate (%)</label>
+                        <input type="number" class="form-control" id="discountRate" min="0" max="30" step="0.5" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="numSimulations" class="form-label">Number of Simulations</label>
+                        <select class="form-select" id="numSimulations" required>
+                            <option value="500">500 (Fast)</option>
+                            <option value="1000" selected>1000 (Balanced)</option>
+                            <option value="5000">5000 (Accurate)</option>
+                            <option value="10000">10000 (Very Accurate)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="historicalRevenues" class="form-label">Historical Revenues (optional, comma-separated)</label>
+                        <input type="text" class="form-control" id="historicalRevenues" placeholder="e.g., 10000, 12000, 15000">
+                        <div class="form-text">Add past revenue data for predictive analytics</div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-play me-2"></i>Run Simulation</button>
+                        <button type="button" id="load-demo" class="btn btn-outline-secondary"><i class="fas fa-flask me-2"></i>Load Demo Case</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div id="results-container" class="d-none">
+            <!-- Recommendation Card -->
+            <div class="card mb-4 shadow-sm">
+                <div id="recommendation-header" class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Investment Recommendation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div id="confidence-badge" class="me-3"></div>
+                        <p id="recommendation-text" class="mb-0"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Tabs -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Simulation Results</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="resultsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" 
+                                    type="button" role="tab" aria-controls="summary" aria-selected="true">
+                                <i class="fas fa-list me-1"></i> Summary
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts" 
+                                    type="button" role="tab" aria-controls="charts" aria-selected="false">
+                                <i class="fas fa-chart-pie me-1"></i> Charts
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="forecast-tab" data-bs-toggle="tab" data-bs-target="#forecast" 
+                                    type="button" role="tab" aria-controls="forecast" aria-selected="false">
+                                <i class="fas fa-chart-line me-1"></i> Forecast
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="resultsTabsContent">
+                        <!-- Summary Tab -->
+                        <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">Net Present Value (NPV)</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Mean NPV</label>
+                                                        <h4 id="mean-npv" class="mb-0"></h4>
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Median NPV</label>
+                                                        <h4 id="median-npv" class="mb-0"></h4>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Minimum NPV</label>
+                                                        <h5 id="min-npv" class="mb-0"></h5>
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Maximum NPV</label>
+                                                        <h5 id="max-npv" class="mb-0"></h5>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">Risk Metrics</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Standard Deviation</label>
+                                                <h5 id="std-dev" class="mb-0"></h5>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Probability of Loss</label>
+                                                <h5 id="prob-loss" class="mb-0"></h5>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">95% Confidence Interval</label>
+                                                <h5 id="confidence-interval" class="mb-0"></h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Charts Tab -->
+                        <div class="tab-pane fade" id="charts" role="tabpanel" aria-labelledby="charts-tab">
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-4">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">NPV Distribution</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="npv-histogram-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">Cumulative Probability</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="cumulative-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Sample Cash Flows</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="cash-flows-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Forecast Tab -->
+                        <div class="tab-pane fade" id="forecast" role="tabpanel" aria-labelledby="forecast-tab">
+                            <div id="forecast-available">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">Revenue Forecast</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="revenue-forecast-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="forecast-unavailable" class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="fas fa-chart-line fa-3x text-muted"></i>
+                                </div>
+                                <h5 class="text-muted">Forecast Not Available</h5>
+                                <p class="text-muted">
+                                    Enter historical revenue data to enable forecasting.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="d-none text-center py-5">
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5>Running Simulation...</h5>
+        </div>
+        
+        <!-- Welcome Card (shown when no results available) -->
+        <div id="welcome-card" class="card shadow-sm">
+            <div class="card-body p-5 text-center">
+                <i class="fas fa-chart-bar fa-4x text-primary mb-3"></i>
+                <h2 class="mb-3">Financial Risk Assessment Platform</h2>
+                <p class="lead mb-4">
+                    Evaluate investment opportunities using advanced Monte Carlo simulations 
+                    and predictive analytics.
+                </p>
+                <ul class="list-unstyled text-start mx-auto" style="max-width: 500px;">
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Calculate Net Present Value (NPV) with thousands of simulations</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Analyze risk through probability distributions</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Generate forecasts using historical data</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Get clear investment recommendations</li>
+                </ul>
+                <p class="mt-4">
+                    Enter your investment parameters or try our demo case to get started.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/simulation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
