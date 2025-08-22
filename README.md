@@ -29,11 +29,11 @@ The platform is designed with **modular architecture (SOA + EDA)**, enabling sca
 
 ## 📂 Project Structure
 Business_Risk_Analysis/
-│── app/
-│ ├── routes/ # Flask routes
-│ ├── services/ # API integration
-│ ├── templates/ # Frontend (HTML/CSS/JS)
-│ ├── static/ # CSS, JS files
-│── data/ # Stock data storage
-│── README.md
+-│── app/
+-│ -├── routes/ # Flask routes
+-│ -├── services/ # API integration
+-│ -├── templates/ # Frontend (HTML/CSS/JS)
+-│ -├── static/ # CSS, JS files
+-│── data/ # Stock data storage
+-│── README.md
 
